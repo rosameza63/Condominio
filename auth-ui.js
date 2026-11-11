@@ -128,7 +128,7 @@ requestPasswordForm.addEventListener('submit', async event => {
   recoveryButton.textContent = 'Enviando…';
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail.value.trim(), {
-      redirectTo: `${window.location.origin}/`,
+      redirectTo: new URL('./', window.location.href).href,
     });
     if (error) throw error;
     localStorage.setItem(pendingPasswordEmailKey, recoveryEmail.value.trim().toLowerCase());
