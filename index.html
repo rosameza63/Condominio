@@ -8,6 +8,7 @@
   <title>Nexo</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="logo.svg">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="style.css?v=61">
   <link rel="stylesheet" href="auth.css?v=7">
 </head>
@@ -25,6 +26,7 @@
       <p class="auth-error" id="authError" role="alert" hidden></p>
       <button class="btn-primary auth-submit" id="loginButton" type="submit">Ingresar</button>
       <button class="auth-link" id="requestPasswordButton" type="button">Crear o recuperar contraseña</button>
+      <button class="btn-secondary install-app-button" data-install-app type="button">Instalar app</button>
       <small class="auth-foot">Usa el correo al que llegó la invitación.</small>
     </form>
     <form class="auth-card" id="requestPasswordForm" hidden>
@@ -62,7 +64,7 @@
       <div class="sidebar-bottom"><div class="help-card"><span>✦</span><div><b>¿Necesitas ayuda?</b><small>Contacta a administración</small></div><button id="helpBtn" aria-label="Contactar administración">›</button></div><button class="profile" id="profileButton" title="Cerrar sesión"><span class="avatar" id="avatar">MR</span><span><b id="profileName">Usuario</b><small id="profileRole">Sesión activa</small></span><span class="more">↪</span></button></div>
     </aside>
     <main class="main-area">
-      <header class="topbar"><button class="mobile-menu" id="menuToggle" aria-label="Abrir menú">☰</button><div class="breadcrumbs"><span>Nexo</span><b>/</b><strong id="crumb">Resumen</strong></div><div class="top-actions"><span class="today" id="today"></span><button class="icon-button" id="notifyBtn" aria-label="Notificaciones">♧<i></i></button><button class="top-avatar" id="topAvatar" title="Cerrar sesión">U</button></div></header>
+      <header class="topbar"><button class="mobile-menu" id="menuToggle" aria-label="Abrir menú">☰</button><div class="breadcrumbs"><span>Nexo</span><b>/</b><strong id="crumb">Resumen</strong></div><div class="top-actions"><span class="today" id="today"></span><button class="btn-secondary install-app-button" data-install-app type="button">Instalar app</button><button class="icon-button" id="notifyBtn" aria-label="Notificaciones">♧<i></i></button><button class="top-avatar" id="topAvatar" title="Cerrar sesión">U</button></div></header>
       <div class="content" id="content"></div>
       <footer>© 2026 Condominio Palo Alto <span>·</span> Nexo · Comunidad</footer>
     </main>
@@ -73,6 +75,7 @@
   <dialog id="notificationDialog"><div class="dialog-head"><div><span class="eyebrow">BANDEJA DE ENTRADA</span><h2>Notificaciones</h2></div><button class="icon-button" id="closeNotifications" aria-label="Cerrar">×</button></div><div id="notificationItems" class="notification-list"></div></dialog>
   <dialog id="adminDataDialog"></dialog>
   <dialog id="directoryDialog"></dialog>
+  <dialog id="installHelpDialog" aria-labelledby="installHelpTitle"><div class="dialog-head"><div><span class="eyebrow">ACCESO RÁPIDO</span><h2 id="installHelpTitle">Añadir Nexo al celular</h2></div><button class="icon-button" data-close-install-help type="button" aria-label="Cerrar">×</button></div><p class="muted" id="installHelpText"></p><div class="form-actions"><button class="btn-primary" data-close-install-help type="button">Entendido</button></div></dialog>
   <script src="admin-data.js?v=4"></script>
   <script src="cuotas.js?v=6"></script>
   <script src="notices.js?v=1"></script>
@@ -95,6 +98,7 @@
       await import('./auth-ui.js?v=40');
     }
   </script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=96'));</script>
+  <script type="module" src="./install-app.js?v=1"></script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=97'));</script>
 </body>
 </html>
