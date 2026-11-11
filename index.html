@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183b35">
+  <meta name="description" content="Nexo, la comunidad conectada de Condominio Palo Alto.">
+  <title>Nexo</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="logo.svg">
+  <link rel="stylesheet" href="style.css?v=61">
+  <link rel="stylesheet" href="auth.css?v=7">
+</head>
+<body>
+  <section class="auth-screen" id="authScreen">
+    <form class="auth-card" id="loginForm">
+      <div class="auth-brand"><img class="brand-mark" src="logo.svg" alt=""><div><b>Nexo</b><small>CONDOMINIO PALO ALTO</small></div></div>
+      <span class="eyebrow">ACCESO A LA COMUNIDAD</span>
+      <h1>Bienvenido</h1>
+      <p>Ingresa con la cuenta que te asignó la administración.</p>
+      <label for="loginEmail">Correo electrónico</label>
+      <input id="loginEmail" type="email" autocomplete="username" placeholder="nombre@correo.com" required>
+      <label for="loginPassword">Contraseña</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Tu contraseña" required>
+      <p class="auth-error" id="authError" role="alert" hidden></p>
+      <button class="btn-primary auth-submit" id="loginButton" type="submit">Ingresar</button>
+      <button class="auth-link" id="requestPasswordButton" type="button">Crear o recuperar contraseña</button>
+      <small class="auth-foot">Usa el correo al que llegó la invitación.</small>
+    </form>
+    <form class="auth-card" id="requestPasswordForm" hidden>
+      <div class="auth-brand"><img class="brand-mark" src="logo.svg" alt=""><div><b>Nexo</b><small>CONDOMINIO PALO ALTO</small></div></div>
+      <span class="eyebrow">RECUPERAR ACCESO</span>
+      <h1>Crear contraseña</h1>
+      <p>Te enviaremos un enlace al correo de tu cuenta para que la configures.</p>
+      <label for="recoveryEmail">Correo electrónico</label>
+      <input id="recoveryEmail" type="email" autocomplete="email" placeholder="nombre@correo.com" required>
+      <p class="auth-error" id="recoveryError" role="alert" hidden></p>
+      <p class="auth-success" id="recoverySuccess" role="status" hidden></p>
+      <button class="btn-primary auth-submit" id="recoveryButton" type="submit">Enviar enlace</button>
+      <button class="auth-link" id="backToLoginButton" type="button">Volver a iniciar sesión</button>
+    </form>
+    <form class="auth-card" id="setPasswordForm" hidden>
+      <div class="auth-brand"><img class="brand-mark" src="logo.svg" alt=""><div><b>Nexo</b><small>CONDOMINIO PALO ALTO</small></div></div>
+      <span class="eyebrow">CONFIGURA TU ACCESO</span>
+      <h1>Define tu contraseña</h1>
+      <p>Elige una contraseña para ingresar con tu correo la próxima vez.</p>
+      <label for="newPassword">Nueva contraseña</label>
+      <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="confirmPassword">Confirma la contraseña</label>
+      <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+      <p class="auth-error" id="passwordError" role="alert" hidden></p>
+      <button class="btn-primary auth-submit" id="setPasswordButton" type="submit">Guardar contraseña</button>
+      <button class="auth-link" id="backFromPasswordButton" type="button">Ya tengo contraseña, volver a ingresar</button>
+    </form>
+  </section>
+  <div id="app-shell" class="app-shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#inicio" aria-label="Nexo, inicio"><img class="brand-mark" src="logo.svg" alt=""><span><b>Nexo</b><small>CONDOMINIO PALO ALTO</small></span></a>
+      <div class="community"><span class="community-icon">◈</span><span><b>Condominio Palo Alto</b><small>Conjunto residencial</small></span><span class="chevron">⌄</span></div>
+      <div class="nav-label">MENÚ PRINCIPAL</div>
+      <nav id="navigation" aria-label="Menú principal"></nav>
+      <div class="sidebar-bottom"><div class="help-card"><span>✦</span><div><b>¿Necesitas ayuda?</b><small>Contacta a administración</small></div><button id="helpBtn" aria-label="Contactar administración">›</button></div><button class="profile" id="profileButton" title="Cerrar sesión"><span class="avatar" id="avatar">MR</span><span><b id="profileName">Usuario</b><small id="profileRole">Sesión activa</small></span><span class="more">↪</span></button></div>
+    </aside>
+    <main class="main-area">
+      <header class="topbar"><button class="mobile-menu" id="menuToggle" aria-label="Abrir menú">☰</button><div class="breadcrumbs"><span>Nexo</span><b>/</b><strong id="crumb">Resumen</strong></div><div class="top-actions"><span class="today" id="today"></span><button class="icon-button" id="notifyBtn" aria-label="Notificaciones">♧<i></i></button><button class="top-avatar" id="topAvatar" title="Cerrar sesión">U</button></div></header>
+      <div class="content" id="content"></div>
+      <footer>© 2026 Condominio Palo Alto <span>·</span> Nexo · Comunidad</footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="roleDialog"><form method="dialog"><div class="dialog-head"><div><span class="eyebrow">VISTA DE DEMOSTRACIÓN</span><h2>Elige un perfil</h2></div><button class="icon-button" value="cancel" aria-label="Cerrar">×</button></div><p class="muted">Cambia de rol para explorar el portal desde cada perspectiva.</p><div class="role-options"><button type="button" data-role="residente"><span>⌂</span><span><b>Residente</b><small>Servicios y vida en comunidad</small></span><span>›</span></button><button type="button" data-role="administrador"><span>▤</span><span><b>Administrador</b><small>Gestión del conjunto</small></span><span>›</span></button><button type="button" data-role="vigilante"><span>◉</span><span><b>Vigilante</b><small>Control de acceso y novedades</small></span><span>›</span></button></div></form></dialog>
+  <dialog id="formDialog"><form id="actionForm" method="dialog"><div class="dialog-head"><div><span class="eyebrow" id="formEyebrow">PORTAL RESIDENCIAL</span><h2 id="formTitle">Nueva solicitud</h2></div><button class="icon-button" value="cancel" formnovalidate aria-label="Cerrar">×</button></div><div id="formFields"></div><div class="form-actions"><button class="btn-secondary" value="cancel" formnovalidate>Cancelar</button><button class="btn-primary" id="submitAction" value="default">Guardar</button></div></form></dialog>
+  <dialog id="notificationDialog"><div class="dialog-head"><div><span class="eyebrow">BANDEJA DE ENTRADA</span><h2>Notificaciones</h2></div><button class="icon-button" id="closeNotifications" aria-label="Cerrar">×</button></div><div id="notificationItems" class="notification-list"></div></dialog>
+  <dialog id="adminDataDialog"></dialog>
+  <dialog id="directoryDialog"></dialog>
+  <script src="admin-data.js?v=4"></script>
+  <script src="cuotas.js?v=6"></script>
+  <script src="notices.js?v=1"></script>
+  <script src="summary-data.js?v=5"></script>
+  <script src="assembly.js?v=12"></script>
+  <script src="directory.js?v=4"></script>
+  <script src="loans.js?v=15"></script>
+  <script src="incidents.js?v=1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer crossorigin="anonymous"></script>
+  <script src="visitors.js?v=6"></script>
+  <script src="app.js?v=73"></script>
+  <script type="module">
+    const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+    const demoMode = isLocal && new URLSearchParams(location.search).get('demo') === '1';
+    if (demoMode) {
+      document.getElementById('authScreen').hidden = true;
+      document.getElementById('app-shell').hidden = false;
+      document.getElementById('roleDialog').showModal();
+    } else {
+      await import('./auth-ui.js?v=40');
+    }
+  </script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=96'));</script>
+</body>
+</html>

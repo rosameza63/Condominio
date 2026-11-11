@@ -1,0 +1,9 @@
+Cuotas.csv
+archivo2.txt
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+node_modules/
+supabase/.temp/
