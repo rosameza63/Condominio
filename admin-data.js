@@ -5,14 +5,56 @@
     tipos_pqr: 'Tipos de PQR',
   };
   const tabs = [['catalogos', 'Catálogos'], ['inventario', 'Elementos y zonas comunes'], ['horarios', 'Horarios'], ['vehiculos', 'Vehículos']];
-  const state = { tab: 'catalogos', busy: false, loaded: false, error: '', data: { tipos_residente: [], tipos_vehiculo: [], tipos_pqr: [] }, inventory: [], schedules: [], vehicles: [], users: [], homes: [], editing: null };
+  const state = { tab: 'catalogos', busy: false, loaded: false, error: '', data: { tipos_residente: [], tipos_vehiculo: [], tipos_pqr: [] }, inventory: [], schedules: [], scheduleSort: { key: 'hora_inicio', direction: 'asc' }, vehicles: [], users: [], homes: [], editing: null };
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const client = () => window.portalSupabase;
   const context = () => window.portalAdminContext?.() || { live: false, role: '' };
   const notify = message => window.portalAdminNotify?.(message);
   const refresh = () => window.portalAdminRender?.();
-  const table = (headers, rows) => `<div class="table-wrap"><table class="data-table"><thead><tr>${headers.map(item => `<th>${item}</th>`).join('')}</tr></thead><tbody>${rows || `<tr><td colspan="${headers.length}" class="empty">Aún no hay registros.</td></tr>`}</tbody></table></div>`;
+  const table = (headers, rows, sort = null) => `<div class="table-wrap"><table class="data-table"><thead><tr>${headers.map((item, index) => {
+    const key = sort?.columns[index];
+    if (!key) return `<th>${item}</th>`;
+    const active = sort.key === key;
+    const direction = active ? sort.direction : 'none';
+    const indicator = active ? (sort.direction === 'asc' ? '▲' : '▼') : '↕';
+    return `<th aria-sort="${direction === 'asc' ? 'ascending' : direction === 'desc' ? 'descending' : 'none'}"><button class="table-sort" type="button" data-basic-sort="${key}" aria-label="Ordenar por ${item}${active ? (sort.direction === 'asc' ? ', ascendente' : ', descendente') : ''}">${item}<span aria-hidden="true">${indicator}</span></button></th>`;
+  }).join('')}</tr></thead><tbody>${rows || `<tr><td colspan="${headers.length}" class="empty">Aún no hay registros.</td></tr>`}</tbody></table></div>`;
   const badge = value => `<span class="badge ${value === 'Activo' || value === 'Disponible' ? '' : 'closed'}">${esc(value)}</span>`;
+
+  function compareScheduleValues(a, b, key, inventoryNames) {
+    const collator = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+    let left;
+    let right;
+    if (key === 'elemento') {
+      left = inventoryNames.get(a.item_id) || 'Elemento no disponible';
+      right = inventoryNames.get(b.item_id) || 'Elemento no disponible';
+      return collator.compare(left, right);
+    }
+    if (key === 'dia_semana') {
+      left = a.dia_semana == null ? -1 : Number(a.dia_semana);
+      right = b.dia_semana == null ? -1 : Number(b.dia_semana);
+      return left - right;
+    }
+    if (key === 'hora_inicio') {
+      left = `${a.hora_inicio || ''}|${a.hora_fin || ''}`;
+      right = `${b.hora_inicio || ''}|${b.hora_fin || ''}`;
+      return collator.compare(left, right);
+    }
+    if (key === 'vigencia') {
+      left = `${a.vigente_desde || '0000-00-00'}|${a.vigente_hasta || '9999-99-99'}`;
+      right = `${b.vigente_desde || '0000-00-00'}|${b.vigente_hasta || '9999-99-99'}`;
+      return collator.compare(left, right);
+    }
+    if (key === 'activo') return Number(Boolean(a.activo)) - Number(Boolean(b.activo));
+    return 0;
+  }
+
+  function sortedSchedules() {
+    const inventoryNames = new Map(state.inventory.map(item => [item.id, item.nombre]));
+    const { key, direction } = state.scheduleSort;
+    const sign = direction === 'asc' ? 1 : -1;
+    return [...state.schedules].sort((a, b) => sign * compareScheduleValues(a, b, key, inventoryNames));
+  }
 
   async function load() {
     if (state.busy || !context().live || context().role !== 'administrador') return;
@@ -62,8 +104,8 @@
       content = `<section class="panel"><div class="panel-title"><h3>Elementos prestables y zonas comunes</h3><button class="btn-secondary" data-basic-new="inventario">＋ Agregar</button></div>${table(['Nombre', 'Tipo', 'Estado', 'Acciones'], rows)}</section>`;
     } else if (state.tab === 'horarios') {
       const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-      const rows = state.schedules.map(item => `<tr><td class="main-cell">${esc(state.inventory.find(record => record.id === item.item_id)?.nombre || 'Elemento no disponible')}</td><td>${esc(item.dia_semana == null ? 'Todos los días' : days[item.dia_semana] || '—')}</td><td>${esc(String(item.hora_inicio || '').slice(0, 5))}–${esc(String(item.hora_fin || '').slice(0, 5))}</td><td>${esc(item.vigente_desde || '—')} a ${esc(item.vigente_hasta || '—')}</td><td>${badge(item.activo ? 'Activo' : 'Inactivo')}</td><td><button class="text-link" data-basic-edit="horarios|${esc(item.id)}">Editar</button><button class="text-link danger-link" data-basic-delete="horarios|${esc(item.id)}">Eliminar</button></td></tr>`).join('');
-      content = `<section class="panel"><div class="panel-title"><h3>Horarios de préstamo y reserva</h3><button class="btn-secondary" data-basic-new="horarios">＋ Agregar horario</button></div>${table(['Elemento o sitio', 'Día', 'Horario', 'Vigencia', 'Estado', 'Acciones'], rows)}</section>`;
+      const rows = sortedSchedules().map(item => `<tr><td class="main-cell">${esc(state.inventory.find(record => record.id === item.item_id)?.nombre || 'Elemento no disponible')}</td><td>${esc(item.dia_semana == null ? 'Todos los días' : days[item.dia_semana] || '—')}</td><td>${esc(String(item.hora_inicio || '').slice(0, 5))}–${esc(String(item.hora_fin || '').slice(0, 5))}</td><td>${esc(item.vigente_desde || '—')} a ${esc(item.vigente_hasta || '—')}</td><td>${badge(item.activo ? 'Activo' : 'Inactivo')}</td><td><button class="text-link" data-basic-edit="horarios|${esc(item.id)}">Editar</button><button class="text-link danger-link" data-basic-delete="horarios|${esc(item.id)}">Eliminar</button></td></tr>`).join('');
+      content = `<section class="panel"><div class="panel-title"><h3>Horarios de préstamo y reserva</h3><button class="btn-secondary" data-basic-new="horarios">＋ Agregar horario</button></div>${table(['Elemento o sitio', 'Día', 'Horario', 'Vigencia', 'Estado', 'Acciones'], rows, { ...state.scheduleSort, columns: ['elemento', 'dia_semana', 'hora_inicio', 'vigencia', 'activo', null] })}</section>`;
     } else {
       const rows = state.vehicles.map(item => {
         const user = state.users.find(record => record.id === item.usuario_id);
@@ -173,6 +215,13 @@
   }
 
   document.addEventListener('click', async event => {
+    const sortButton = event.target.closest('[data-basic-sort]');
+    if (sortButton) {
+      const key = sortButton.dataset.basicSort;
+      state.scheduleSort = { key, direction: state.scheduleSort.key === key && state.scheduleSort.direction === 'asc' ? 'desc' : 'asc' };
+      refresh();
+      return;
+    }
     const tab = event.target.closest('[data-basic-tab]');
     if (tab) { state.tab = tab.dataset.basicTab; refresh(); return; }
     if (event.target.closest('[data-basic-reload]')) { state.loaded = false; await load(); return; }
