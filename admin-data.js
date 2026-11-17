@@ -4,8 +4,8 @@
     tipos_vehiculo: 'Tipos de vehículo',
     tipos_pqr: 'Tipos de PQR',
   };
-  const tabs = [['catalogos', 'Catálogos'], ['inventario', 'Elementos y zonas comunes'], ['horarios', 'Horarios'], ['vehiculos', 'Vehículos']];
-  const state = { tab: 'catalogos', busy: false, loaded: false, error: '', data: { tipos_residente: [], tipos_vehiculo: [], tipos_pqr: [] }, inventory: [], schedules: [], scheduleSort: { key: 'hora_inicio', direction: 'asc' }, vehicles: [], users: [], homes: [], editing: null };
+  const tabs = [['catalogos', 'Catálogos'], ['inventario', 'Elementos y zonas comunes'], ['horarios', 'Horarios'], ['vehiculos', 'Vehículos'], ['parqueaderos', 'Parqueaderos'], ['mascotas', 'Mascotas'], ['vacunas', 'Vacunas']];
+  const state = { tab: 'catalogos', busy: false, loaded: false, error: '', data: { tipos_residente: [], tipos_vehiculo: [], tipos_pqr: [] }, inventory: [], schedules: [], scheduleSort: { key: 'hora_inicio', direction: 'asc' }, vehicles: [], parkings: [], pets: [], vaccines: [], users: [], homes: [], residentLinks: [], residentTypes: [], editing: null };
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const client = () => window.portalSupabase;
   const context = () => window.portalAdminContext?.() || { live: false, role: '' };
@@ -60,18 +60,22 @@
     if (state.busy || !context().live || context().role !== 'administrador') return;
     state.busy = true; state.error = '';
     const db = client();
-    const [residents, vehicleTypes, pqrs, inventory, schedules, vehicles, users, homes] = await Promise.all([
+    const [residents, vehicleTypes, pqrs, inventory, schedules, vehicles, users, homes, parkings, pets, residentLinks, vaccines] = await Promise.all([
       db.from('tipos_residente').select('codigo,nombre,activo').order('nombre'),
       db.from('tipos_vehiculo').select('codigo,nombre,activo').order('nombre'),
       db.from('tipos_pqr').select('codigo,nombre,activo').order('nombre'),
       db.from('inventario_elementos_y_sitios').select('id,tipo_item,nombre,estado').order('nombre'),
       db.from('horarios_prestamo').select('id,item_id,dia_semana,hora_inicio,hora_fin,vigente_desde,vigente_hasta,activo').order('hora_inicio'),
       db.from('vehiculos').select('id,tipo_vehiculo,tipo_vehiculo_codigo,placa,color,usuario_id,inmueble_id').order('placa'),
-      db.from('usuarios').select('id,nombre_completo,rol,activo').order('nombre_completo'),
+      db.from('usuarios').select('id,nombre_completo,rol,activo,tipo_residente,inmueble_id').order('nombre_completo'),
       db.from('inmuebles').select('id,identificador').order('identificador'),
+      db.from('parqueaderos').select('*').order('numero'),
+      db.from('mascotas').select('*').order('nombre'),
+      db.from('inmueble_usuarios').select('usuario_id,inmueble_id,tipo_residente_codigo'),
+      db.from('vacunas_mascotas').select('*').order('fecha_aplicacion', { ascending: false }),
     ]);
     state.busy = false; state.loaded = true;
-    const errors = [residents, vehicleTypes, pqrs, inventory, schedules, vehicles, users, homes].filter(result => result.error);
+    const errors = [residents, vehicleTypes, pqrs, inventory, schedules, vehicles, users, homes, parkings, pets, residentLinks, vaccines].filter(result => result.error);
     if (errors.length) state.error = `No se pudieron cargar todos los datos: ${errors.map(result => result.error.message).join(' · ')}`;
     state.data.tipos_residente = residents.data || [];
     state.data.tipos_vehiculo = vehicleTypes.data || [];
@@ -81,6 +85,11 @@
     state.vehicles = vehicles.data || [];
     state.users = users.data || [];
     state.homes = homes.data || [];
+    state.parkings = parkings.data || [];
+    state.pets = pets.data || [];
+    state.vaccines = vaccines.data || [];
+    state.residentLinks = residentLinks.data || [];
+    state.residentTypes = residents.data || [];
     refresh();
   }
 
@@ -106,7 +115,7 @@
       const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
       const rows = sortedSchedules().map(item => `<tr><td class="main-cell">${esc(state.inventory.find(record => record.id === item.item_id)?.nombre || 'Elemento no disponible')}</td><td>${esc(item.dia_semana == null ? 'Todos los días' : days[item.dia_semana] || '—')}</td><td>${esc(String(item.hora_inicio || '').slice(0, 5))}–${esc(String(item.hora_fin || '').slice(0, 5))}</td><td>${esc(item.vigente_desde || '—')} a ${esc(item.vigente_hasta || '—')}</td><td>${badge(item.activo ? 'Activo' : 'Inactivo')}</td><td><button class="text-link" data-basic-edit="horarios|${esc(item.id)}">Editar</button><button class="text-link danger-link" data-basic-delete="horarios|${esc(item.id)}">Eliminar</button></td></tr>`).join('');
       content = `<section class="panel"><div class="panel-title"><h3>Horarios de préstamo y reserva</h3><button class="btn-secondary" data-basic-new="horarios">＋ Agregar horario</button></div>${table(['Elemento o sitio', 'Día', 'Horario', 'Vigencia', 'Estado', 'Acciones'], rows, { ...state.scheduleSort, columns: ['elemento', 'dia_semana', 'hora_inicio', 'vigencia', 'activo', null] })}</section>`;
-    } else {
+    } else if (state.tab === 'vehiculos') {
       const rows = state.vehicles.map(item => {
         const user = state.users.find(record => record.id === item.usuario_id);
         const home = state.homes.find(record => record.id === item.inmueble_id);
@@ -114,11 +123,24 @@
         return `<tr><td class="main-cell">${esc(item.placa)}<span class="sub-cell">${esc(type?.nombre || item.tipo_vehiculo || 'Tipo no definido')} · ${esc(item.color || 'Sin color')}</span></td><td>${esc(user?.nombre_completo || 'Usuario no disponible')}</td><td>${esc(home?.identificador || '—')}</td><td><button class="text-link" data-basic-edit="vehiculos|${esc(item.id)}">Editar</button><button class="text-link danger-link" data-basic-delete="vehiculos|${esc(item.id)}">Eliminar</button></td></tr>`;
       }).join('');
       content = `<section class="panel"><div class="panel-title"><h3>Vehículos registrados</h3><button class="btn-secondary" data-basic-new="vehiculos">＋ Registrar vehículo</button></div>${table(['Placa y tipo', 'Usuario asociado', 'Inmueble', 'Acciones'], rows)}</section>`;
+    } else if (state.tab === 'parqueaderos') {
+      const rows = state.parkings.map(item => `<tr><td class="main-cell">${esc(item.numero)}<span class="sub-cell">${esc(item.tipo)}${item.placa ? ` · ${esc(item.placa)}` : ''}</span></td><td>${esc(state.users.find(user => user.id === item.usuario_id)?.nombre_completo || 'Propietario no disponible')}</td><td>${esc(state.homes.find(home => home.id === item.inmueble_id)?.identificador || '—')}</td><td><button class="text-link" data-basic-edit="parqueaderos|${esc(item.id)}">Editar</button><button class="text-link danger-link" data-basic-delete="parqueaderos|${esc(item.id)}">Eliminar</button></td></tr>`).join('');
+      content = `<section class="panel"><div class="panel-title"><h3>Parqueaderos por propietario</h3><button class="btn-secondary" data-basic-new="parqueaderos">＋ Agregar parqueadero</button></div>${table(['Número y tipo', 'Propietario', 'Inmueble', 'Acciones'], rows)}</section>`;
+    } else if (state.tab === 'mascotas') {
+      const rows = state.pets.map(item => `<tr><td class="main-cell">${esc(item.nombre)}<span class="sub-cell">${esc(item.especie)}${item.raza ? ` · ${esc(item.raza)}` : ''}${item.color ? ` · ${esc(item.color)}` : ''}</span></td><td>${esc(state.users.find(user => user.id === item.usuario_id)?.nombre_completo || 'Propietario no disponible')}</td><td>${esc(state.homes.find(home => home.id === item.inmueble_id)?.identificador || '—')}</td><td><button class="text-link" data-basic-edit="mascotas|${esc(item.id)}">Editar</button><button class="text-link danger-link" data-basic-delete="mascotas|${esc(item.id)}">Eliminar</button></td></tr>`).join('');
+      content = `<section class="panel"><div class="panel-title"><h3>Mascotas por propietario</h3><button class="btn-secondary" data-basic-new="mascotas">＋ Agregar mascota</button></div>${table(['Mascota', 'Propietario', 'Inmueble', 'Acciones'], rows)}</section>`;
+    } else {
+      const rows = state.vaccines.map(item => {
+        const pet = state.pets.find(record => record.id === item.mascota_id);
+        const owner = pet && state.users.find(user => user.id === pet.usuario_id);
+        return `<tr><td class="main-cell">${esc(item.vacuna)}<span class="sub-cell">${esc(item.fecha_aplicacion)} · Próxima dosis: ${esc(item.proxima_dosis || 'No indicada')}</span></td><td>${esc(pet?.nombre || 'Mascota no disponible')}</td><td>${esc(owner?.nombre_completo || 'Propietario no disponible')}</td><td>${esc(item.veterinaria || '—')}</td><td><button class="text-link" data-basic-edit="vacunas|${esc(item.id)}">Editar</button><button class="text-link danger-link" data-basic-delete="vacunas|${esc(item.id)}">Eliminar</button></td></tr>`;
+      }).join('');
+      content = `<section class="panel"><div class="panel-title"><h3>Vacunas aplicadas</h3><button class="btn-secondary" data-basic-new="vacunas">＋ Registrar vacuna</button></div>${table(['Vacuna y fechas', 'Mascota', 'Propietario', 'Veterinaria', 'Acciones'], rows)}</section>`;
     }
     const live = context().live && context().role === 'administrador';
     const actions = live ? '<button class="text-link" data-basic-reload>Actualizar datos</button>' : '';
     if (live && !state.busy && !state.loaded) queueMicrotask(load);
-    return `${window.portalAdminHead?.('ADMINISTRACIÓN', 'Datos básicos', 'Administra catálogos, elementos prestables, horarios y vehículos.', actions) || ''}${!live ? '<section class="panel"><p class="muted">Inicia sesión como administrador para gestionar datos reales en Supabase.</p></section>' : `${navigation}${state.error ? `<p class="auth-error">${esc(state.error)}</p>` : ''}${state.busy ? '<section class="panel"><p class="muted">Cargando datos…</p></section>' : content}`}`;
+    return `${window.portalAdminHead?.('ADMINISTRACIÓN', 'Datos básicos', 'Administra catálogos, zonas comunes, vehículos, parqueaderos y mascotas por propietario.', actions) || ''}${!live ? '<section class="panel"><p class="muted">Inicia sesión como administrador para gestionar datos reales en Supabase.</p></section>' : `${navigation}${state.error ? `<p class="auth-error">${esc(state.error)}</p>` : ''}${state.busy ? '<section class="panel"><p class="muted">Cargando datos…</p></section>' : content}`}`;
   };
 
   function selectField(id, label, options, selected = '') {
@@ -126,6 +148,19 @@
   }
   function inputField(id, label, value = '', type = 'text', required = true) {
     return `<div class="field"><label for="basic_${id}">${label}</label><input id="basic_${id}" name="${id}" type="${type}" value="${esc(value)}" ${required ? 'required' : ''}></div>`;
+  }
+  function ownerProperties(ownerId) {
+    const ownerCodes = new Set(state.residentTypes.filter(type => type.codigo.toLowerCase().includes('propiet') || type.nombre.toLowerCase() === 'propietario').map(type => type.codigo));
+    const linkedIds = state.residentLinks.filter(link => link.usuario_id === ownerId && ownerCodes.has(link.tipo_residente_codigo)).map(link => link.inmueble_id);
+    const owner = state.users.find(user => user.id === ownerId);
+    if (!linkedIds.length && owner?.tipo_residente?.toLowerCase().includes('propiet') && owner.inmueble_id) linkedIds.push(owner.inmueble_id);
+    return [...new Set(linkedIds)].map(id => state.homes.find(home => home.id === id)).filter(Boolean);
+  }
+  function ownerOptions(includeInactive = false) {
+    const ownerCodes = new Set(state.residentTypes.filter(type => type.codigo.toLowerCase().includes('propiet') || type.nombre.toLowerCase() === 'propietario').map(type => type.codigo));
+    const ids = new Set(state.residentLinks.filter(link => ownerCodes.has(link.tipo_residente_codigo)).map(link => link.usuario_id));
+    state.users.filter(user => user.rol === 'Residente' && user.tipo_residente?.toLowerCase().includes('propiet')).forEach(user => ids.add(user.id));
+    return state.users.filter(user => user.rol === 'Residente' && (includeInactive || user.activo !== false) && ids.has(user.id)).map(user => [user.id, user.nombre_completo]);
   }
   function showForm(kind, record = null) {
     state.editing = { kind, id: record?.id || record?.codigo || null, record };
@@ -157,15 +192,54 @@
         + inputField('color', 'Color', record?.color || '', 'text', false)
         + selectField('usuario_id', 'Residente responsable', residentOptions, record?.usuario_id || residentOptions[0]?.[0])
         + selectField('inmueble_id', 'Inmueble', homeOptions, record?.inmueble_id || homeOptions[0]?.[0]);
+    } else if (kind === 'parqueaderos' || kind === 'mascotas') {
+      const owners = ownerOptions(Boolean(record));
+      const chosenOwner = record?.usuario_id || owners[0]?.[0] || '';
+      const linkedHomes = ownerProperties(chosenOwner);
+      if (record?.inmueble_id && !linkedHomes.some(home => home.id === record.inmueble_id)) {
+        const existingHome = state.homes.find(home => home.id === record.inmueble_id);
+        if (existingHome) linkedHomes.push(existingHome);
+      }
+      const homeOptions = linkedHomes.map(home => [home.id, home.identificador]);
+      fields = selectField('usuario_id', 'Propietario', owners, chosenOwner)
+        + selectField('inmueble_id', 'Inmueble asociado', homeOptions, record?.inmueble_id || homeOptions[0]?.[0]);
+      if (kind === 'parqueaderos') fields += inputField('numero', 'Número del parqueadero', record?.numero || '')
+        + selectField('tipo', 'Tipo', [['Automóvil', 'Automóvil'], ['Motocicleta', 'Motocicleta'], ['Bicicleta', 'Bicicleta'], ['Otro', 'Otro']], record?.tipo || 'Automóvil')
+        + inputField('placa', 'Placa relacionada (opcional)', record?.placa || '', 'text', false)
+        + inputField('observaciones', 'Observaciones (opcional)', record?.observaciones || '', 'text', false);
+      else fields += inputField('nombre', 'Nombre de la mascota', record?.nombre || '')
+        + selectField('especie', 'Especie', [['Perro', 'Perro'], ['Gato', 'Gato'], ['Ave', 'Ave'], ['Otro', 'Otro']], record?.especie || 'Perro')
+        + inputField('raza', 'Raza (opcional)', record?.raza || '', 'text', false)
+        + inputField('color', 'Color (opcional)', record?.color || '', 'text', false)
+        + inputField('observaciones', 'Observaciones (opcional)', record?.observaciones || '', 'text', false);
+    } else if (kind === 'vacunas') {
+      const petOptions = state.pets.map(pet => {
+        const home = state.homes.find(item => item.id === pet.inmueble_id)?.identificador || 'Inmueble';
+        return [pet.id, `${pet.nombre} · ${home}`];
+      });
+      fields = selectField('mascota_id', 'Mascota', petOptions, record?.mascota_id || petOptions[0]?.[0])
+        + inputField('vacuna', 'Vacuna aplicada', record?.vacuna || '')
+        + inputField('fecha_aplicacion', 'Fecha de aplicación', record?.fecha_aplicacion || '', 'date')
+        + inputField('proxima_dosis', 'Próxima dosis (opcional)', record?.proxima_dosis || '', 'date', false)
+        + inputField('veterinaria', 'Veterinaria (opcional)', record?.veterinaria || '', 'text', false)
+        + inputField('observaciones', 'Observaciones (opcional)', record?.observaciones || '', 'text', false);
     }
-    if (!fields || (kind === 'horarios' && !state.inventory.length) || (kind === 'vehiculos' && (!state.data.tipos_vehiculo.some(item => item.activo) || !state.users.some(user => user.rol === 'Residente' && user.activo !== false) || !state.homes.length))) {
-      notify('Primero necesitas registrar los elementos, tipos de vehículo, residentes e inmuebles que vas a asociar.');
+    if (!fields || (kind === 'horarios' && !state.inventory.length) || (kind === 'vehiculos' && (!state.data.tipos_vehiculo.some(item => item.activo) || !state.users.some(user => user.rol === 'Residente' && user.activo !== false) || !state.homes.length)) || (['parqueaderos', 'mascotas'].includes(kind) && (!ownerOptions(Boolean(record)).length || !ownerProperties(record?.usuario_id || ownerOptions(Boolean(record))[0]?.[0]).length)) || (kind === 'vacunas' && !state.pets.length)) {
+      notify(kind === 'vacunas' ? 'Primero registra una mascota para asociarle sus vacunas.' : ['parqueaderos', 'mascotas'].includes(kind) ? 'Primero registra un residente con tipo Propietario y asígnale un inmueble.' : 'Primero necesitas registrar los elementos, tipos de vehículo, residentes e inmuebles que vas a asociar.');
       return;
     }
     dialog.innerHTML = `<form id="adminDataForm"><div class="dialog-head"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2>${title}</h2></div><button class="icon-button" type="button" data-basic-close aria-label="Cerrar">×</button></div><p id="basicFormError" class="auth-error" hidden></p><div class="basic-form-fields">${fields}</div><div class="form-actions"><button class="btn-secondary" type="button" data-basic-close>Cancelar</button><button class="btn-primary" type="submit">Guardar</button></div></form>`;
     dialog.showModal();
     dialog.querySelector('[data-basic-close]').focus();
     dialog.querySelectorAll('[data-basic-close]').forEach(button => button.onclick = () => dialog.close());
+    const ownerSelect = dialog.querySelector('#basic_usuario_id');
+    const homeSelect = dialog.querySelector('#basic_inmueble_id');
+    if (ownerSelect && homeSelect) ownerSelect.addEventListener('change', () => {
+      const previousHome = homeSelect.value;
+      const options = ownerProperties(ownerSelect.value);
+      homeSelect.innerHTML = options.map(home => `<option value="${esc(home.id)}">${esc(home.identificador)}</option>`).join('');
+      if (options.some(home => home.id === previousHome)) homeSelect.value = previousHome;
+    });
     dialog.querySelector('#adminDataForm').onsubmit = event => saveForm(event, kind);
   }
 
@@ -194,6 +268,15 @@
       tableName = 'vehiculos';
       const type = state.data.tipos_vehiculo.find(item => item.codigo === values.tipo_vehiculo_codigo);
       payload = { tipo_vehiculo_codigo: values.tipo_vehiculo_codigo, tipo_vehiculo: type?.nombre || '', placa: values.placa.trim().toUpperCase(), color: values.color.trim() || null, usuario_id: values.usuario_id, inmueble_id: values.inmueble_id };
+    } else if (kind === 'parqueaderos') {
+      tableName = 'parqueaderos';
+      payload = { usuario_id: values.usuario_id, inmueble_id: values.inmueble_id, numero: values.numero.trim(), tipo: values.tipo, placa: values.placa.trim().toUpperCase() || null, observaciones: values.observaciones.trim() || null };
+    } else if (kind === 'mascotas') {
+      tableName = 'mascotas';
+      payload = { usuario_id: values.usuario_id, inmueble_id: values.inmueble_id, nombre: values.nombre.trim(), especie: values.especie, raza: values.raza.trim() || null, color: values.color.trim() || null, observaciones: values.observaciones.trim() || null };
+    } else if (kind === 'vacunas') {
+      tableName = 'vacunas_mascotas';
+      payload = { mascota_id: values.mascota_id, vacuna: values.vacuna.trim(), fecha_aplicacion: values.fecha_aplicacion, proxima_dosis: values.proxima_dosis || null, veterinaria: values.veterinaria.trim() || null, observaciones: values.observaciones.trim() || null };
     }
     const query = id ? db.from(tableName).update(payload).eq(catalogTables[kind] ? 'codigo' : 'id', id) : db.from(tableName).insert(payload);
     const submitButton = event.currentTarget.querySelector('[type="submit"]');
@@ -228,14 +311,15 @@
     const create = event.target.closest('[data-basic-new]');
     if (create) { showForm(create.dataset.basicNew); return; }
     const edit = event.target.closest('[data-basic-edit]');
-    if (edit) { const [kind, id] = edit.dataset.basicEdit.split('|'); const rows = catalogTables[kind] ? state.data[kind] : kind === 'inventario' ? state.inventory : kind === 'horarios' ? state.schedules : state.vehicles; const record = rows.find(item => String(catalogTables[kind] ? item.codigo : item.id) === id); if (record) showForm(kind, record); return; }
+    if (edit) { const [kind, id] = edit.dataset.basicEdit.split('|'); const rows = catalogTables[kind] ? state.data[kind] : kind === 'inventario' ? state.inventory : kind === 'horarios' ? state.schedules : kind === 'vehiculos' ? state.vehicles : kind === 'parqueaderos' ? state.parkings : kind === 'mascotas' ? state.pets : state.vaccines; const record = rows.find(item => String(catalogTables[kind] ? item.codigo : item.id) === id); if (record) showForm(kind, record); return; }
     const toggle = event.target.closest('[data-basic-toggle]');
     if (toggle) { const [kind, code] = toggle.dataset.basicToggle.split('|'); const { error } = await client().from(kind).update({ activo: toggle.dataset.active === 'true' }).eq('codigo', code); if (error) notify(`No se pudo actualizar: ${error.message}`); else { state.loaded = false; await load(); } return; }
     const remove = event.target.closest('[data-basic-delete]');
     if (remove) {
       const [kind, id] = remove.dataset.basicDelete.split('|');
       if (!confirm('¿Eliminar este registro? Si está relacionado con otros datos, Supabase puede impedirlo.')) return;
-      const { error } = await client().from(catalogTables[kind] ? kind : kind === 'inventario' ? 'inventario_elementos_y_sitios' : kind === 'horarios' ? 'horarios_prestamo' : 'vehiculos').delete().eq(catalogTables[kind] ? 'codigo' : 'id', id);
+      const tableName = catalogTables[kind] ? kind : kind === 'inventario' ? 'inventario_elementos_y_sitios' : kind === 'horarios' ? 'horarios_prestamo' : kind === 'vehiculos' ? 'vehiculos' : kind === 'vacunas' ? 'vacunas_mascotas' : kind;
+      const { error } = await client().from(tableName).delete().eq(catalogTables[kind] ? 'codigo' : 'id', id);
       if (error) notify(`No se pudo eliminar: ${error.message}`); else { notify('Registro eliminado.'); state.loaded = false; await load(); }
     }
   });

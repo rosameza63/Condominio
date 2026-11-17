@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="logo.svg">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=61">
+  <link rel="stylesheet" href="style.css?v=62">
   <link rel="stylesheet" href="auth.css?v=7">
 </head>
 <body>
@@ -76,7 +76,8 @@
   <dialog id="adminDataDialog"></dialog>
   <dialog id="directoryDialog"></dialog>
   <dialog id="installHelpDialog" aria-labelledby="installHelpTitle"><div class="dialog-head"><div><span class="eyebrow">ACCESO RÁPIDO</span><h2 id="installHelpTitle">Añadir Nexo al celular</h2></div><button class="icon-button" data-close-install-help type="button" aria-label="Cerrar">×</button></div><p class="muted" id="installHelpText"></p><div class="form-actions"><button class="btn-primary" data-close-install-help type="button">Entendido</button></div></dialog>
-  <script src="admin-data.js?v=5"></script>
+  <script src="admin-data.js?v=8"></script>
+  <script src="resident-assets.js?v=2"></script>
   <script src="cuotas.js?v=6"></script>
   <script src="notices.js?v=1"></script>
   <script src="summary-data.js?v=5"></script>
@@ -86,7 +87,7 @@
   <script src="incidents.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer crossorigin="anonymous"></script>
   <script src="visitors.js?v=6"></script>
-  <script src="app.js?v=73"></script>
+  <script src="app.js?v=74"></script>
   <script type="module">
     const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
     const demoMode = isLocal && new URLSearchParams(location.search).get('demo') === '1';
@@ -99,6 +100,6 @@
     }
   </script>
   <script type="module" src="./install-app.js?v=1"></script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=98'));</script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=99'));</script>
 </body>
 </html>

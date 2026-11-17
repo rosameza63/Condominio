@@ -1,4 +1,4 @@
-const CACHE = 'nexo-palo-alto-v104';
+const CACHE = 'nexo-palo-alto-v107';
 const QR_LIBRARY = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
 const FILES = [
   './',
@@ -7,6 +7,7 @@ const FILES = [
   './auth.css',
   './app.js',
   './admin-data.js',
+  './resident-assets.js',
   './cuotas.js',
   './notices.js',
   './summary-data.js',

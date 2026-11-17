@@ -44,5 +44,6 @@ Los scripts están preparados para revisión; no se han ejecutado contra tu proy
 - Bitácora de vigilancia: `novedades_porteria`; vigilancia crea y consulta sus reportes, y administración actualiza el estado de seguimiento.
 - PQRS: para guardar el asunto, inmueble asociado, respuesta administrativa y fecha de actualización, ejecuta `07_gestion_pqrs.sql` en Supabase SQL Editor.
 - Préstamos: el residente solicita un elemento o zona en un horario activo; el inmueble se completa desde sus asociaciones. Administración puede asignar fecha y horario, validar que el intervalo esté disponible y aprobar. Portería puede atender la reserva y marcarla `Finalizado`.
+- Parqueaderos, mascotas y vacunas: ejecuta `12_parqueaderos_y_mascotas.sql` después de `01_schema_adiciones.sql` y `02_politicas_rls.sql`. Administración puede asociar varios registros a cada propietario e inmueble y guardar aplicaciones y próximas dosis por mascota; residentes consultan los de su inmueble y portería consulta el directorio operativo.
 
 El esquema actual se conserva. `usuarios.inmueble_id`, `vehiculos.tipo_vehiculo` y `pqrs.tipo_pqr` no se eliminan; las columnas nuevas quedan listas para una migración gradual.
