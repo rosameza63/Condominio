@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
   <link rel="apple-touch-icon" href="icon-192.png?v=2">
-  <link rel="stylesheet" href="style.css?v=65">
+  <link rel="stylesheet" href="style.css?v=66">
   <link rel="stylesheet" href="auth.css?v=8">
 </head>
 <body>
@@ -64,9 +64,9 @@
       <div class="sidebar-bottom"><div class="help-card"><span>✦</span><div><b>¿Necesitas ayuda?</b><small>Contacta a administración</small></div><button id="helpBtn" aria-label="Contactar administración">›</button></div><button class="profile" id="profileButton" title="Cerrar sesión"><span class="avatar" id="avatar">MR</span><span><b id="profileName">Usuario</b><small id="profileRole">Sesión activa</small></span><span class="more">↪</span></button></div>
     </aside>
     <main class="main-area">
-      <header class="topbar"><button class="mobile-menu" id="menuToggle" aria-label="Abrir menú">☰</button><img class="topbar-logo" src="nexo-logo.png" alt="Nexo"><div class="breadcrumbs"><span>Nexo</span><b>/</b><strong id="crumb">Resumen</strong></div><div class="top-actions"><span class="today" id="today"></span><button class="btn-secondary install-app-button" data-install-app type="button">Instalar app</button><button class="icon-button" id="notifyBtn" aria-label="Notificaciones">♧<i></i></button><button class="top-avatar" id="topAvatar" title="Cerrar sesión">U</button></div></header>
+      <header class="topbar"><button class="mobile-menu" id="menuToggle" aria-label="Abrir menú">☰</button><img class="topbar-logo" src="nexo-logo.png" alt="Nexo"><div class="breadcrumbs"><strong id="crumb">Resumen</strong></div><div class="top-actions"><span class="today" id="today"></span><button class="btn-secondary install-app-button" data-install-app type="button">Instalar app</button><button class="icon-button" id="notifyBtn" aria-label="Notificaciones">♧<i></i></button><button class="top-avatar" id="topAvatar" title="Cerrar sesión">U</button></div></header>
       <div class="content" id="content"></div>
-      <footer>© 2026 Condominio Palo Alto <span>·</span> Nexo · Comunidad</footer>
+      <footer>© 2026 Condominio Palo Alto <span>·</span> Comunidad</footer>
     </main>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -100,6 +100,6 @@
     }
   </script>
   <script type="module" src="./install-app.js?v=1"></script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=101'));</script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=102'));</script>
 </body>
 </html>

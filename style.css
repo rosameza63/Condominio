@@ -56,3 +56,5 @@ dialog.fee-import-dialog{width:min(680px,calc(100vw - 30px));max-height:85vh;ove
 .brand-mark.brand-full-logo{width:58px;height:60px;flex:0 0 58px;object-fit:contain;border-radius:12px;background:transparent}
 
 .topbar-logo{display:none}@media(max-width:760px){.topbar-logo{display:block;width:32px;height:34px;flex:0 0 32px;object-fit:contain;border-radius:8px;background:transparent}}
+
+@media(max-width:760px){.sidebar.open+.main-area .topbar-logo{display:none}}
