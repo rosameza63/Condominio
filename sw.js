@@ -1,4 +1,4 @@
-const CACHE = 'nexo-palo-alto-v107';
+const CACHE = 'nexo-palo-alto-v109';
 const QR_LIBRARY = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
 const FILES = [
   './',
@@ -20,6 +20,7 @@ const FILES = [
   './install-app.js',
   './supabase-client.example.js',
   './manifest.json',
+  './nexo-logo.png',
   './icon-192.png',
   './icon-512.png',
   './logo.svg',
